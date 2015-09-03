@@ -1,7 +1,8 @@
 /* globals EmberDev */
-import Ember from 'ember-metal/core';
+
+import { getDebugFunction, setDebugFunction } from 'ember-metal/debug';
 import { Registry } from 'ember-runtime/system/container';
-import Component from 'ember-views/views/component';
+import Component from 'ember-views/components/component';
 import compile from 'ember-template-compiler/system/compile';
 
 import { runAppend, runDestroy } from 'ember-runtime/tests/utils';
@@ -15,18 +16,18 @@ QUnit.module('ember-htmlbars: {{-html-safe}} helper', {
     registry.optionsForType('helper', { instantiate: false });
 
     warnings = [];
-    originalWarn = Ember.warn;
-    Ember.warn = function(message, test) {
+    originalWarn = getDebugFunction('warn');
+    setDebugFunction('warn', function(message, test) {
       if (!test) {
         warnings.push(message);
       }
-    };
+    });
   },
 
   teardown() {
     runDestroy(container);
     runDestroy(component);
-    Ember.warn = originalWarn;
+    setDebugFunction('warn', originalWarn);
   }
 });
 

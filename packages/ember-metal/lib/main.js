@@ -5,6 +5,7 @@
 
 // BEGIN IMPORTS
 import Ember from 'ember-metal/core';
+import { deprecateFunc } from 'ember-metal/debug';
 import isEnabled, { FEATURES } from 'ember-metal/features';
 import merge from 'ember-metal/merge';
 import {
@@ -349,22 +350,6 @@ Ember.FEATURES.isEnabled = isEnabled;
 Ember.onerror = null;
 // END EXPORTS
 
-import {
-  assert,
-  warn,
-  debug,
-  deprecate,
-  deprecateFunc,
-  runInDebug
-} from 'ember-metal/assert';
-
-Ember.assert = assert;
-Ember.warn = warn;
-Ember.debug = debug;
-Ember.deprecate = deprecate;
-Ember.deprecateFunc = deprecateFunc;
-Ember.runInDebug = runInDebug;
-
 // do this for side-effects of updating Ember.assert, warn, etc when
 // ember-debug is present
 // This needs to be called before any deprecateFunc
@@ -379,7 +364,7 @@ if (Ember.__loader.registry['ember-debug']) {
   }
 }
 
-Ember.create = Ember.deprecateFunc('Ember.create is deprecated in favor of Object.create', { id: 'ember-metal.ember-create', until: '3.0.0' }, Object.create);
-Ember.keys = Ember.deprecateFunc('Ember.keys is deprecated in favor of Object.keys', { id: 'ember-metal.ember.keys', until: '3.0.0' }, Object.keys);
+Ember.create = deprecateFunc('Ember.create is deprecated in favor of Object.create', { id: 'ember-metal.ember-create', until: '3.0.0' }, Object.create);
+Ember.keys = deprecateFunc('Ember.keys is deprecated in favor of Object.keys', { id: 'ember-metal.ember.keys', until: '3.0.0' }, Object.keys);
 
 export default Ember;

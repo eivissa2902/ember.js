@@ -1,4 +1,4 @@
-import Ember from 'ember-metal/core';
+import { assert, deprecate } from 'ember-metal/debug';
 import { get } from 'ember-metal/property_get';
 import assign from 'ember-metal/assign';
 import { isGlobal } from 'ember-metal/path_cache';
@@ -6,27 +6,24 @@ import { internal, render } from 'htmlbars-runtime';
 import getValue from 'ember-htmlbars/hooks/get-value';
 import { isStream } from 'ember-metal/streams/utils';
 
-export default function buildComponentTemplate({ component, layout, isAngleBracket, isComponentElement, outerAttrs }, attrs, content) {
-  var blockToRender, tagName, meta;
+export default function buildComponentTemplate({ component, tagName, layout, isAngleBracket, isComponentElement, outerAttrs }, attrs, content) {
+  var blockToRender, meta;
 
   if (component === undefined) {
     component = null;
   }
 
   if (layout && layout.raw) {
-    let attributes = (component && component._isAngleBracket) ? normalizeComponentAttributes(component, true, attrs) : undefined;
-
     let yieldTo = createContentBlocks(content.templates, content.scope, content.self, component);
-    blockToRender = createLayoutBlock(layout.raw, yieldTo, content.self, component, attrs, attributes);
+    blockToRender = createLayoutBlock(layout.raw, yieldTo, content.self, component, attrs);
     meta = layout.raw.meta;
   } else if (content.templates && content.templates.default) {
-    let attributes = (component && component._isAngleBracket) ? normalizeComponentAttributes(component, true, attrs) : undefined;
-    blockToRender = createContentBlock(content.templates.default, content.scope, content.self, component, attributes);
+    blockToRender = createContentBlock(content.templates.default, content.scope, content.self, component);
     meta = content.templates.default.meta;
   }
 
   if (component && !component._isAngleBracket || isComponentElement) {
-    tagName = tagNameFor(component);
+    tagName = tagName || tagNameFor(component);
 
     // If this is not a tagless component, we need to create the wrapping
     // element. We use `manualElement` to create a template that represents
@@ -50,6 +47,30 @@ export default function buildComponentTemplate({ component, layout, isAngleBrack
   return { createdElement: !!tagName, block: blockToRender };
 }
 
+export function buildHTMLTemplate(tagName, _attrs, content) {
+  let attrs = {};
+
+  for (let prop in _attrs) {
+    let val = _attrs[prop];
+
+    if (typeof val === 'string') {
+      attrs[prop] = val;
+    } else {
+      attrs[prop] = ['value', val];
+    }
+  }
+
+  let childTemplate = content.templates.default;
+  let elementTemplate = internal.manualElement(tagName, attrs, childTemplate.isEmpty);
+
+  if (childTemplate.isEmpty) {
+    return blockFor(elementTemplate, { scope: content.scope });
+  } else {
+    let blockToRender = blockFor(content.templates.default, content);
+    return blockFor(elementTemplate, { yieldTo: blockToRender, scope: content.scope });
+  }
+}
+
 function mergeAttrs(innerAttrs, outerAttrs) {
   let result = assign({}, innerAttrs, outerAttrs);
 
@@ -61,17 +82,16 @@ function mergeAttrs(innerAttrs, outerAttrs) {
 }
 
 function blockFor(template, options) {
-  Ember.assert('BUG: Must pass a template to blockFor', !!template);
+  assert('BUG: Must pass a template to blockFor', !!template);
   return internal.blockFor(render, template, options);
 }
 
-function createContentBlock(template, scope, self, component, attributes) {
-  Ember.assert('BUG: buildComponentTemplate can take a scope or a self, but not both', !(scope && self));
+function createContentBlock(template, scope, self, component) {
+  assert('BUG: buildComponentTemplate can take a scope or a self, but not both', !(scope && self));
 
   return blockFor(template, {
     scope,
     self,
-    attributes,
     options: { view: component }
   });
 }
@@ -92,10 +112,9 @@ function createContentBlocks(templates, scope, self, component) {
   return output;
 }
 
-function createLayoutBlock(template, yieldTo, self, component, attrs, attributes) {
+function createLayoutBlock(template, yieldTo, self, component, attrs) {
   return blockFor(template, {
     yieldTo,
-    attributes,
 
     // If we have an old-style Controller with a template it will be
     // passed as our `self` argument, and it should be the context for
@@ -120,9 +139,11 @@ function tagNameFor(view) {
 
   if (tagName !== null && typeof tagName === 'object' && tagName.isDescriptor) {
     tagName = get(view, 'tagName');
-    Ember.deprecate('In the future using a computed property to define tagName will not be permitted. That value will be respected, but changing it will not update the element.',
-                    !tagName,
-                    { id: 'ember-views.computed-tag-name', until: '2.0.0' });
+    deprecate(
+      'In the future using a computed property to define tagName will not be permitted. That value will be respected, but changing it will not update the element.',
+      !tagName,
+      { id: 'ember-views.computed-tag-name', until: '2.0.0' }
+    );
   }
 
   if (tagName === null || tagName === undefined) {
@@ -169,7 +190,7 @@ function normalizeComponentAttributes(component, isAngleBracket, attrs) {
         expression = ['get', 'view.' + attr];
       }
 
-      Ember.assert('You cannot use class as an attributeBinding, use classNameBindings instead.', attrName !== 'class');
+      assert('You cannot use class as an attributeBinding, use classNameBindings instead.', attrName !== 'class');
 
       normalized[attrName] = expression;
     }
@@ -228,10 +249,6 @@ function normalizeClass(component, attrs) {
     normalizeClasses(attrs.classBinding.split(' '), normalizedClass);
   }
 
-  if (attrs.classNames) {
-    normalizedClass.push(['value', attrs.classNames]);
-  }
-
   if (classNames) {
     for (i = 0, l = classNames.length; i < l; i++) {
       normalizedClass.push(classNames[i]);
@@ -252,7 +269,7 @@ function normalizeClasses(classes, output) {
 
   for (i = 0, l = classes.length; i < l; i++) {
     var className = classes[i];
-    Ember.assert('classNameBindings must not have spaces in them. Multiple class name bindings can be provided as elements of an array, e.g. [\'foo\', \':bar\']', className.indexOf(' ') === -1);
+    assert('classNameBindings must not have spaces in them. Multiple class name bindings can be provided as elements of an array, e.g. [\'foo\', \':bar\']', className.indexOf(' ') === -1);
 
     var [propName, activeClass, inactiveClass] = className.split(':');
 
@@ -278,7 +295,7 @@ function normalizeClasses(classes, output) {
 }
 
 function validateTaglessComponent(component) {
-  Ember.assert('You cannot use `classNameBindings` on a tag-less component: ' + component.toString(), function() {
+  assert('You cannot use `classNameBindings` on a tag-less component: ' + component.toString(), function() {
     var classNameBindings = component.classNameBindings;
     return !classNameBindings || classNameBindings.length === 0;
   });

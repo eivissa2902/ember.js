@@ -45,6 +45,15 @@ Ember.isNamespace = true;
 
 Ember.toString = function() { return 'Ember'; };
 
+// The debug functions are exported to globals with `require` to
+// prevent babel-plugin-filter-imports from removing them.
+let debugModule = Ember.__loader.require('ember-metal/debug');
+Ember.assert = debugModule.assert;
+Ember.warn = debugModule.warn;
+Ember.debug = debugModule.debug;
+Ember.deprecate = debugModule.deprecate;
+Ember.deprecateFunc = debugModule.deprecateFunc;
+Ember.runInDebug = debugModule.runInDebug;
 
 /**
   The semantic version.

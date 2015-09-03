@@ -2,8 +2,8 @@
 @module ember
 @submodule ember-runtime
 */
-import Ember from 'ember-metal/core'; // Ember.assert
 
+import { assert } from 'ember-metal/debug';
 import {
   get,
   getWithDefault
@@ -63,9 +63,9 @@ import isNone from 'ember-metal/is_none';
 
   ```javascript
   Ember.Object.extend({
-    valueObserver: function() {
+    valueObserver: Ember.observer('value', function() {
       // Executes whenever the "value" property changes
-    }.observes('value')
+    })
   });
   ```
 
@@ -444,7 +444,7 @@ export default Mixin.create({
   */
   incrementProperty(keyName, increment) {
     if (isNone(increment)) { increment = 1; }
-    Ember.assert('Must pass a numeric value to incrementProperty', (!isNaN(parseFloat(increment)) && isFinite(increment)));
+    assert('Must pass a numeric value to incrementProperty', (!isNaN(parseFloat(increment)) && isFinite(increment)));
     return set(this, keyName, (parseFloat(get(this, keyName)) || 0) + increment);
   },
 
@@ -464,7 +464,7 @@ export default Mixin.create({
   */
   decrementProperty(keyName, decrement) {
     if (isNone(decrement)) { decrement = 1; }
-    Ember.assert('Must pass a numeric value to decrementProperty', (!isNaN(parseFloat(decrement)) && isFinite(decrement)));
+    assert('Must pass a numeric value to decrementProperty', (!isNaN(parseFloat(decrement)) && isFinite(decrement)));
     return set(this, keyName, (get(this, keyName) || 0) - decrement);
   },
 

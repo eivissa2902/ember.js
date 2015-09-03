@@ -3,7 +3,7 @@
 @submodule ember-htmlbars
 */
 
-import Component from 'ember-views/views/component';
+import newStream from 'ember-htmlbars/utils/new-stream';
 
 export default function bindShadowScope(env, parentScope, shadowScope, options) {
   if (!options) { return; }
@@ -16,7 +16,7 @@ export default function bindShadowScope(env, parentScope, shadowScope, options) 
   }
 
   var view = options.view;
-  if (view && !(view instanceof Component)) {
+  if (view && !view.isComponent) {
     newStream(shadowScope.locals, 'view', view, null);
 
     if (!didOverrideController) {
@@ -39,13 +39,4 @@ export default function bindShadowScope(env, parentScope, shadowScope, options) 
   }
 
   return shadowScope;
-}
-
-import ProxyStream from 'ember-metal/streams/proxy-stream';
-import subscribe from 'ember-htmlbars/utils/subscribe';
-
-function newStream(scope, key, newValue, renderNode, isSelf) {
-  var stream = new ProxyStream(newValue, isSelf ? '' : key);
-  if (renderNode) { subscribe(renderNode, scope, stream); }
-  scope[key] = stream;
 }
